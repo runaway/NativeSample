@@ -5,6 +5,16 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
+set(OpenCV_DIR F:/OpenCV-android-sdk/sdk/native/jni)
+find_package(OpenCV REQUIRED)
+#target_link_libraries(${OpenCV_LIBS})
+
+include_directories(../sdk/native/jni/include)
+link_directories(../sdk/native/libs/armeabi ../sdk/native/staticlibs/armeabi ../sdk/native/3rdparty/libs/armeabi)
+#link_directories(../sdk/native/libs/armeabi-v7a ../sdk/native/staticlibs/armeabi-v7a ../sdk/native/3rdparty/libs/armeabi-v7a)
+#link_directories(../sdk/native/libs/x86_64 ../sdk/native/staticlibs/x86_64 ../sdk/native/3rdparty/libs/x86_64)
+
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -15,6 +25,7 @@ add_library( # Sets the name of the library.
 
         # Sets the library as a shared library.
         SHARED
+
 
         # Provides a relative path to your source file(s).
         src/main/cpp/native-lib.cpp)
@@ -39,6 +50,39 @@ find_library( # Sets the name of the path variable.
 target_link_libraries( # Specifies the target library.
         native-lib
 
+#        opencv_calib3d
+#        opencv_core
+#        opencv_dnn
+#        opencv_features2d
+#        opencv_flann
+#        opencv_highgui
+#        opencv_imgcodecs
+#        opencv_imgproc
+#        opencv_ml
+#        opencv_objdetect
+#        opencv_photo
+#        opencv_shape
+#        opencv_stitching
+#        opencv_superres
+#        opencv_video
+#        opencv_videoio
+#        opencv_videostab
+#
+#        cpufeatures
+#        IlmImf
+#        libjasper
+#        libjpeg-turbo
+#        libpng
+#        libprotobuf
+#        libtiff
+#        libwebp
+#        tbb
+
+
+        #tegra_hal
+        opencv_java3
         # Links the target library to the log library
         # included in the NDK.
-        ${log-lib})
+        ${log-lib}
+        ${OpenCV_LIBS})
+
