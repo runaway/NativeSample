@@ -36,8 +36,13 @@ void detectAndDraw( Mat& img, CascadeClassifier& cascade,
 string cascadeName;
 string nestedCascadeName;
 
-int DetectObj()
+//unsigned char* g_pbyImg;
+unsigned char *g_pbyImg  = new unsigned char[4096 * 2160 * 4];
+
+extern "C"
 {
+int
+DetectObj(char *szFileName, unsigned char *pbyImg, unsigned int &nWidth, unsigned int &nHeight) {
     VideoCapture capture;
     Mat frame, image;
     string inputName;
@@ -51,100 +56,90 @@ int DetectObj()
     if (scale < 1)
         scale = 1;
     tryflip = false;
-    inputName = "/sdcard/Download/image/faces3.jpg";
-    //printf("");
+    inputName = szFileName;
 
-    if ( !nestedCascade.load( nestedCascadeName ) )
-    {
-        printf("WARNING: Could not load classifier cascade for nested objects");;
+    printf("JNICALL inputName = %s", inputName.c_str());
+
+    if (!nestedCascade.load(nestedCascadeName)) {
+        printf("JNICALL WARNING: Could not load classifier cascade for nested objects");;
     }
-    if( !cascade.load( cascadeName ) )
-    {
-        printf("ERROR: Could not load classifier cascade");
+    if (!cascade.load(cascadeName)) {
+        printf("JNICALL ERROR: Could not load classifier cascade");
         //help();
         return -1;
     }
-    if( inputName.empty() || (isdigit(inputName[0]) && inputName.size() == 1) )
-    {
+    if (inputName.empty() || (isdigit(inputName[0]) && inputName.size() == 1)) {
         int camera = inputName.empty() ? 0 : inputName[0] - '0';
-        if(!capture.open(camera))
-            printf("Capture from camera # %d didn't work", camera);
-    }
-    else if( inputName.size() )
-    {
-        image = imread( inputName, 1 );
-        if( image.empty() )
-        {
-            if(!capture.open( inputName ))
-                printf("Could not read %s image", inputName.c_str());
+        if (!capture.open(camera))
+            printf("JNICALL Capture from camera # %d didn't work", camera);
+    } else if (inputName.size()) {
+        image = imread(inputName, 1);
+        if (image.empty()) {
+            if (!capture.open(inputName))
+                printf("JNICALL Could not read %s image", inputName.c_str());
         }
-    }
-    else
-    {
-        image = imread( "/sdcard/Download/image/1127.bmp", 1);
-        if(image.empty()) printf("Couldn't read image");
+    } else {
+        image = imread("/sdcard/Download/image/1127.bmp", 1);
+        if (image.empty()) printf("JNICALL Couldn't read image");
     }
 
-    if( capture.isOpened() )
-    {
-        printf("Video capturing has been started ...");
+    if (capture.isOpened()) {
+        printf("JNICALL Video capturing has been started ...");
 
-        for(;;)
-        {
+        for (;;) {
             capture >> frame;
-            if( frame.empty() )
+            if (frame.empty())
                 break;
 
             Mat frame1 = frame.clone();
-            detectAndDraw( frame1, cascade, nestedCascade, scale, tryflip );
+            detectAndDraw(frame1, cascade, nestedCascade, scale, tryflip);
 
-            char c = (char)waitKey(10);
-            if( c == 27 || c == 'q' || c == 'Q' )
+            char c = (char) waitKey(10);
+            if (c == 27 || c == 'q' || c == 'Q')
                 break;
         }
-    }
-    else
-    {
-        printf("Detecting face(s) in %s", inputName.c_str());
-        if( !image.empty() )
-        {
-            detectAndDraw( image, cascade, nestedCascade, scale, tryflip );
-            waitKey(0);
-        }
-        else if( !inputName.empty() )
-        {
+    } else {
+        printf("JNICALL Detecting face(s) in %s", inputName.c_str());
+        if (!image.empty()) {
+            detectAndDraw(image, cascade, nestedCascade, scale, tryflip);
+            nWidth = image.cols;
+            nHeight = image.rows;
+            memcpy(pbyImg, image.ptr<uchar>(0), nWidth * nHeight * 3);
+            printf("JNICALL End of if (!image.empty())");
+            //waitKey(0);
+        } else if (!inputName.empty()) {
             /* assume it is a text file containing the
             list of the image filenames to be processed - one per line */
-            FILE* f = fopen( inputName.c_str(), "rt" );
-            if( f )
-            {
-                char buf[1000+1];
-                while( fgets( buf, 1000, f ) )
-                {
-                    int len = (int)strlen(buf);
-                    while( len > 0 && isspace(buf[len-1]) )
+            FILE *f = fopen(inputName.c_str(), "rt");
+            if (f) {
+                char buf[1000 + 1];
+                while (fgets(buf, 1000, f)) {
+                    int len = (int) strlen(buf);
+                    while (len > 0 && isspace(buf[len - 1]))
                         len--;
                     buf[len] = '\0';
                     //printf("file " << buf << endl;
-                    image = imread( buf, 1 );
-                    if( !image.empty() )
-                    {
-                        detectAndDraw( image, cascade, nestedCascade, scale, tryflip );
-                        char c = (char)waitKey(0);
-                        if( c == 27 || c == 'q' || c == 'Q' )
-                            break;
-                    }
-                    else
-                    {
-                        printf("Aw snap, couldn't read image ");
+                    image = imread(buf, 1);
+                    if (!image.empty()) {
+                        detectAndDraw(image, cascade, nestedCascade, scale, tryflip);
+                        nWidth = image.cols;
+                        nHeight = image.rows;
+                        memcpy(pbyImg, image.ptr<uchar>(0), nWidth * nHeight * 3);
+                        printf("JNICALL End of else if (!inputName.empty())");
+                        //char c = (char)waitKey(0);
+                        //if( c == 27 || c == 'q' || c == 'Q' )
+                        //    break;
+                    } else {
+                        printf("JNICALL Aw snap, couldn't read image ");
                     }
                 }
                 fclose(f);
             }
         }
     }
-
+    //nWidth = 12345; nHeight = 67890;
     return 0;
+}
 }
 
 #if 1
@@ -167,6 +162,11 @@ Java_com_example_david_nativesample_MainActivity_stringFromJNI(
         jobject /* this */) {
     std::string hello = "Hello from Native8 C++";
 
+    g_pbyImg = new unsigned char[1920 * 1080 * 3];
+    char * szInputImg = "/sdcard/Download/image/faces3.jpg";
+    unsigned int nWidth = 0;
+    unsigned int nHeight = 0;
+
     //"/storage/emulated/0/Download/image/"
     //SaveFile("/sdcard/Download/image/NativeTest.txt", "NativeTest\n", 11);
     //LOGI("JNICALL Before imread");
@@ -177,8 +177,10 @@ Java_com_example_david_nativesample_MainActivity_stringFromJNI(
     //cvtColor();
     imwrite("/sdcard/Download/image/1127.png", matTemp);
 
-    DetectObj();
     printf("JNICALL After imwrite");
+    DetectObj(szInputImg, g_pbyImg, nWidth, nHeight);
+    //nWidth = 123; nHeight = 456;
+    printf("JNICALL After DetectObj %d, %d", nWidth, nHeight);
 
     return env->NewStringUTF(hello.c_str());
 }
@@ -230,7 +232,7 @@ void detectAndDraw( Mat& img, CascadeClassifier& cascade,
         }
     }
     t = (double)getTickCount() - t;
-    printf( "detection time = %g ms\n", t*1000/getTickFrequency());
+    printf("JNICALL detection time = %g ms\n", t*1000/getTickFrequency());
 
     for ( size_t i = 0; i < faces.size(); i++ )
     {
@@ -253,7 +255,7 @@ void detectAndDraw( Mat& img, CascadeClassifier& cascade,
             rectangle( img, Point(cvRound(r.x*scale), cvRound(r.y*scale)),
                        Point(cvRound((r.x + r.width-1)*scale), cvRound((r.y + r.height-1)*scale)),
                        color, 3, 8, 0);
-        printf( "Before NativeSample if( nestedCascade.empty() ) = %f\n", aspect_ratio);
+        printf( "JNICALL Before NativeSample if( nestedCascade.empty() ) = %f\n", aspect_ratio);
 
         if( nestedCascade.empty() )
             continue;
@@ -266,7 +268,7 @@ void detectAndDraw( Mat& img, CascadeClassifier& cascade,
                                                 //|CASCADE_SCALE_IMAGE
                                          ,
                                         Size(30, 30) );
-        printf( "After NativeSample nestedCascade.detectMultiScale nestedObjects.size() = %d\n", nestedObjects.size());
+        printf( "JNICALL After NativeSample nestedCascade.detectMultiScale nestedObjects.size() = %d\n", nestedObjects.size());
 
         for ( size_t j = 0; j < nestedObjects.size(); j++ )
         {
@@ -278,6 +280,6 @@ void detectAndDraw( Mat& img, CascadeClassifier& cascade,
         }
     }
     //imshow( "result", img );
-    printf( "Before NativeSample imwrite = %d\n", faces.size());
+    printf( "JNICALL Before NativeSample imwrite = %d\n", faces.size());
     imwrite("/sdcard/Download/image/result.png", img);
 }
